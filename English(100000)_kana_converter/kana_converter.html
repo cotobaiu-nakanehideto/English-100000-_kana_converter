@@ -1,0 +1,345 @@
+<!--
+/*!
+ * 呵名発音コンバーター完全自立型パッケージ
+ * Copyright (c) 2026 コトバイウ呵名発音記号 (中根英登)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * 本プログラムはフリーソフトウェアです。あなたは、フリーソフトウェア財団が公表した
+ * GNU General Public Licenseのバージョン3（またはそれ以降のバージョン）の条件に従って,
+ * 本プログラムを再配布および/または改変することができます。
+ * 
+ * 本プログラムは、他者の利用権を制限する独占的な権利主張を一切禁止します。
+ * 本プログラムは無保証であり、利用による損害について制作者は一切の責任を負いません。
+ */
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>コトバイウ呵名コンバーター（スタンドアローン版）※GPLライセンス</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        h1 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            font-size: 24px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .file-input-area {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 2px dashed #ced4da;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            font-family: monospace;
+            resize: vertical;
+        }
+        button {
+            background-color: #111;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #444;
+        }
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        .status-msg {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        
+        /* 出力ウインドウ全体のスタイル */
+        .result-display-area {
+            margin-top: 25px;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        /* 各ブロック（段落）のコンテナ */
+        .paragraph-block {
+            margin-bottom: 30px;
+            display: block;
+        }
+
+        /* 【重要】Wordに独立した「段落」として認識させるためのPタグ共通設定 */
+        p.phonetic-text-line {
+            display: block;
+            white-space: nowrap;
+            margin: 0;
+            padding: 2px 0;
+        }
+        
+        /* 1行目：英単語全体の行（Century / 14ポイント） */
+        .row-word-line {
+            font-family: 'Century', 'Century Schoolbook', serif;
+            font-size: 14pt;
+            font-weight: normal;
+            color: #000;
+        }
+        
+        /* 2行目：呵名全体の行（MS Pゴシック） */
+        .row-kana-line {
+            font-family: 'MS PGothic', 'MS Pゴシック', sans-serif;
+        }
+        
+        /* 3行目：IPA全体の行（Arial） */
+        .row-ipa-line {
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* 括弧および単語間の半角スペース専用スタイル（11ポイント） */
+        .fixed-11pt-style {
+            font-size: 11pt;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        /* 2行目：呵名発音記号内の個別内部スタイル */
+        .kana-inner-1 { font-size: 8pt;  text-decoration: none; display: inline-block; }
+        .kana-inner-2 { font-size: 8pt;  text-decoration: underline; display: inline-block; }
+        .kana-inner-3 { font-size: 12pt; text-decoration: none; display: inline-block; }
+        .kana-inner-4 { font-size: 12pt; text-decoration: underline; display: inline-block; }
+        .kana-inner-default { font-size: 14pt; text-decoration: none; display: inline-block; } 
+
+        /* 3行目：IPA発音記号内の個別内部スタイル */
+        .ipa-inner-3   { font-size: 11pt; text-decoration: none; display: inline-block; }
+        .ipa-inner-4   { font-size: 11pt; text-decoration: underline; display: inline-block; }
+        .ipa-inner-default   { font-size: 14pt; text-decoration: none; display: inline-block; } 
+
+        /* クレジット・注記文エリアの共通外枠 */
+        .footer-area {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px dotted #ccc;
+            font-family: sans-serif;
+            display: block;
+        }
+
+        /* 注記文用スタイル（12ポイント） */
+        .notice-line-style {
+            font-size: 12pt;
+            color: #333;
+            margin-bottom: 8px;
+            line-height: 1.5;
+            display: block;
+        }
+
+        /* 最下行：防衛用クレジットスタイル（8ポイント） */
+        .credit-line-style {
+            font-size: 8pt;
+            color: #666;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>コトバイウ呵名コンバーター（スタンドアローン版）※GPLライセンス </h1>
+    
+    <div class="file-input-area">
+        <label style="font-weight: bold; display: block; margin-bottom: 8px;">【ステップ1】コトバイウの辞書CSVファイルを選択してください：</label>
+        <input type="file" id="csvFileInput" accept=".csv" onchange="loadCSVFile()">
+        <div id="statusMessage" class="status-msg">辞書CSVファイルが選択されていません。</div>
+    </div>
+
+    <label style="font-weight: bold; display: block; margin-bottom: 8px;">【ステップ2】英文を入力してください：</label>
+    <textarea id="inputTxt" placeholder="ここに英文を入力..." disabled>I am walking.&#10;Walking you are.</textarea>
+    <br>
+    <button id="convertBtn" onclick="processSentenceWithCSV()" disabled>文章を変換</button>
+
+    <h3>出力ウインドウ：</h3>
+    <div id="outputResult" class="result-display-area"><span style="color:gray;">ここに結果が表示されます。</span></div>
+</div>
+
+<script>
+let dictionary = {};
+
+function loadCSVFile() {
+    const fileInput = document.getElementById('csvFileInput');
+    const statusMsg = document.getElementById('statusMessage');
+    const inputTxt = document.getElementById('inputTxt');
+    const convertBtn = document.getElementById('convertBtn');
+    
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    statusMsg.style.color = "#0066cc";
+    statusMsg.innerText = "100万行規模のデータを高速解析中...";
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split(/\r\n|\n/);
+        dictionary = {}; 
+        let count = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const cells = lines[i].split(',');
+            if (cells.length >= 3) {
+                const word = cells[0].replace(/^["']|["']$/g, '').trim().toLowerCase();
+                const kana = cells[1].replace(/^["']|["']$/g, '').trim();
+                const ipa  = cells[2].replace(/^["']|["']$/g, '').trim();
+                if (word) {
+                    dictionary[word] = { kana: kana, ipa: ipa };
+                    count++;
+                }
+            }
+        }
+        
+        statusMsg.style.color = "green";
+        statusMsg.innerText = `成功：${count.toLocaleString()}件のコトバイウ辞書データをメモリに格納しました。`;
+        inputTxt.disabled = false;
+        convertBtn.disabled = false;
+    };
+    reader.readAsText(file, "UTF-8");
+}
+
+function parseKanaTokens(text) {
+    if (!text) return "";
+    const tokens = text.split(/(\*[0-9]+)/);
+    let html = "";
+    let currentClass = "kana-inner-default";
+    for (let i = 0; i < tokens.length; i++) {
+        let token = tokens[i];
+        if (!token) continue;
+        if (token.startsWith('*')) {
+            let flagNum = token.substring(1);
+            if (['1', '2', '3', '4'].includes(flagNum)) {
+                currentClass = `kana-inner-${flagNum}`;
+            } else {
+                currentClass = "kana-inner-default";
+            }
+        } else {
+            html += `<span class="${currentClass}">${token}</span>`;
+        }
+    }
+    return html;
+}
+
+function parseIpaTokens(text) {
+    if (!text) return "";
+    const tokens = text.split(/(\*[0-9]+)/);
+    let html = "";
+    let currentClass = "ipa-inner-default";
+    for (let i = 0; i < tokens.length; i++) {
+        let token = tokens[i];
+        if (!token) continue;
+        if (token.startsWith('*')) {
+            let flagNum = token.substring(1);
+            if (['3', '4'].includes(flagNum)) {
+                currentClass = `ipa-inner-${flagNum}`;
+            } else {
+                currentClass = "ipa-inner-default";
+            }
+        } else {
+            html += `<span class="${currentClass}">${token}</span>`;
+        }
+    }
+    return html;
+}
+
+function processSentenceWithCSV() {
+    const input = document.getElementById('inputTxt').value.trim();
+    const outputDiv = document.getElementById('outputResult');
+    
+    if (!input) {
+        outputDiv.innerHTML = "<p style='color:gray;'>文章を入力してください。</p>";
+        return;
+    }
+    
+    const inputLines = input.split(/\r\n|\n/);
+    let totalHtml = "";
+    
+    const space11pt = `<span class="fixed-11pt-style">&nbsp;</span>`;
+    
+    for (let L = 0; L < inputLines.length; L++) {
+        let currentLineText = inputLines[L].trim();
+        if (!currentLineText) continue; 
+        
+        const words = currentLineText.split(/\s+/);
+        
+        let wordLineArray = [];
+        let kanaLineArray = [];
+        let ipaLineArray = [];
+        
+        for (let i = 0; i < words.length; i++) {
+            let originalWord = words[i];
+            let cleanWord = originalWord.toLowerCase().replace(/[^a-z']/g, ""); 
+            let dictEntry = dictionary[cleanWord];
+            
+            wordLineArray.push(originalWord);
+            
+            if (dictEntry) {
+                kanaLineArray.push(parseKanaTokens(dictEntry.kana));
+                ipaLineArray.push(parseIpaTokens(dictEntry.ipa));
+            } else {
+                const fallbackString = `&lt;${originalWord}&gt;`;
+                kanaLineArray.push(fallbackString);
+                ipaLineArray.push(fallbackString);
+            }
+        }
+        
+        const finalWordLine = wordLineArray.join(space11pt);
+        const finalKanaLine = kanaLineArray.join(space11pt);
+        const finalIpaLine  = ipaLineArray.join(space11pt);
+        
+        totalHtml += `<div class="paragraph-block">`;
+        totalHtml += `  <p class="phonetic-text-line row-word-line">${finalWordLine}</p>`;
+        totalHtml += `  <p class="phonetic-text-line row-kana-line"><span class="fixed-11pt-style">【</span>${finalKanaLine}<span class="fixed-11pt-style">】</span></p>`;
+        totalHtml += `  <p class="phonetic-text-line row-ipa-line"><span class="fixed-11pt-style">[&nbsp;</span>${finalIpaLine}<span class="fixed-11pt-style">&nbsp;]</span></p>`;
+        totalHtml += `</div>`;
+    }
+    
+    totalHtml += `<div class="footer-area">`;
+    totalHtml += `  <div class="notice-line-style">注：異なる発音がある場合、★の両隣りにそれぞれの発音を表記しています。編集機能のあるWordに全文をコピー＆ペーストしたのち、必要のない方の発音を削除してください。</div>`;
+    totalHtml += `  <div class="credit-line-style">コトバイウ呵名発音記号</div>`;
+    totalHtml += `</div>`;
+    
+    outputDiv.innerHTML = totalHtml;
+}
+</script>
+
+</body>
+</html>
