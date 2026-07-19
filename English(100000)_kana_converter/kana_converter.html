@@ -306,7 +306,12 @@ function processSentenceWithCSV() {
         
         for (let i = 0; i < words.length; i++) {
             let originalWord = words[i];
-            let cleanWord = originalWord.toLowerCase().replace(/[^a-z']/g, ""); 
+            
+            // 英字、半角アポストロフィ、全角アポストロフィ以外を除去し、アポストロフィを「~」に置換
+            let cleanWord = originalWord.toLowerCase()
+                .replace(/[^a-z'’]/g, "")
+                .replace(/['’]/g, "~");
+                
             let dictEntry = dictionary[cleanWord];
             
             wordLineArray.push(originalWord);
