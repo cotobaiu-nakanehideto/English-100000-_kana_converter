@@ -47,7 +47,7 @@ dictionary.csvに関しては、<br>
 2016年12月25日に完成していました。<br>
 標準英語10万語をスタンドアローンとして表記させることのできる<br>
 kana_converter.htmlに関しては、<br>
-中根英登のスクリプトのもと<br>
+中根英登のプロンプトのもと<br>
 AIアシスタント「Google AI Plus 有料版 Gemini 3.1 Pro」の手により<br>
 プログラムHTML/CSS/JavaScriptコード生成がなされ、<br>
 2026年07月18日に完成されました。<br>
